@@ -1,13 +1,15 @@
+# coding=utf-8
 __author__ = 'frank'
+
 
 import json
 from mock import Mock, patch
 from unittest import TestCase
 
-from netki import Netki, submit_request, WalletName
+from netki import Netki, process_request, WalletName
 
 
-class TestSubmitRequest(TestCase):
+class TestProcessRequest(TestCase):
     def setUp(self):
         self.patcher1 = patch('netki.requests')
         self.mockRequests = self.patcher1.start()
@@ -20,97 +22,201 @@ class TestSubmitRequest(TestCase):
 
         self.request_data = {'key': 'val'}
 
+        # Setup go right condition
+        self.response_data = {'success': True}
+        self.mockRequests.request.return_value.json.return_value = self.response_data
+        self.mockRequests.request.return_value.status_code = 200
+
     def tearDown(self):
         self.patcher1.stop()
 
-    def test_get_request(self):
+    def test_get_method_go_right(self):
 
-        ret_val = submit_request('api_key', 'partner_id', 'uri', 'GET')
-
-        # Validate submit_request data
-        self.assertEqual(1, self.mockRequests.get.call_count)
-        self.assertEqual(0, self.mockRequests.post.call_count)
-        self.assertEqual(0, self.mockRequests.put.call_count)
-        self.assertEqual(0, self.mockRequests.delete.call_count)
-
-        call_args = self.mockRequests.get.call_args
-        self.assertEqual('uri', call_args[0][0])
-        self.assertDictEqual(self.headers, call_args[1].get('headers'))
-
-        # Validate response
-        self.assertEqual(ret_val, self.mockRequests.get.return_value)
-
-    def test_post_request(self):
-
-        ret_val = submit_request('api_key', 'partner_id', 'uri', 'POST', self.request_data)
+        ret_val = process_request('api_key', 'partner_id', 'uri', 'GET')
 
         # Validate submit_request data
-        self.assertEqual(0, self.mockRequests.get.call_count)
-        self.assertEqual(1, self.mockRequests.post.call_count)
-        self.assertEqual(0, self.mockRequests.put.call_count)
-        self.assertEqual(0, self.mockRequests.delete.call_count)
+        self.assertEqual(1, self.mockRequests.request.call_count)
 
-        call_args = self.mockRequests.post.call_args
-        self.assertEqual('uri', call_args[0][0])
-        self.assertDictEqual(self.headers, call_args[1].get('headers'))
-        self.assertDictEqual(self.request_data, call_args[1].get('data'))
+        call_args = self.mockRequests.request.call_args[1]
+        self.assertIsNone(call_args.get('data'))
+        self.assertDictEqual(self.headers, call_args.get('headers'))
+        self.assertEqual('GET', call_args.get('method'))
+        self.assertEqual('uri', call_args.get('url'))
 
         # Validate response
-        self.assertEqual(ret_val, self.mockRequests.post.return_value)
+        self.assertDictEqual(ret_val, self.response_data)
 
-    def test_put_request(self):
+    def test_post_method_go_right(self):
 
-        ret_val = submit_request('api_key', 'partner_id', 'uri', 'PUT', self.request_data)
+        ret_val = process_request('api_key', 'partner_id', 'uri', 'POST', json.dumps(self.request_data))
 
         # Validate submit_request data
-        self.assertEqual(0, self.mockRequests.get.call_count)
-        self.assertEqual(0, self.mockRequests.post.call_count)
-        self.assertEqual(1, self.mockRequests.put.call_count)
-        self.assertEqual(0, self.mockRequests.delete.call_count)
+        self.assertEqual(1, self.mockRequests.request.call_count)
 
-        call_args = self.mockRequests.put.call_args
-        self.assertEqual('uri', call_args[0][0])
-        self.assertDictEqual(self.headers, call_args[1].get('headers'))
-        self.assertDictEqual(self.request_data, call_args[1].get('data'))
+        call_args = self.mockRequests.request.call_args[1]
+        self.assertEqual(json.dumps(self.request_data), call_args.get('data'))
+        self.assertDictEqual(self.headers, call_args.get('headers'))
+        self.assertEqual('POST', call_args.get('method'))
+        self.assertEqual('uri', call_args.get('url'))
 
         # Validate response
-        self.assertEqual(ret_val, self.mockRequests.put.return_value)
+        self.assertDictEqual(ret_val, self.response_data)
 
-    def test_delete_request(self):
+    def test_put_method_go_right(self):
 
-        ret_val = submit_request('api_key', 'partner_id', 'uri', 'DELETE')
+        ret_val = process_request('api_key', 'partner_id', 'uri', 'PUT', json.dumps(self.request_data))
 
         # Validate submit_request data
-        self.assertEqual(0, self.mockRequests.get.call_count)
-        self.assertEqual(0, self.mockRequests.post.call_count)
-        self.assertEqual(0, self.mockRequests.put.call_count)
-        self.assertEqual(1, self.mockRequests.delete.call_count)
+        self.assertEqual(1, self.mockRequests.request.call_count)
 
-        call_args = self.mockRequests.delete.call_args
-        self.assertEqual('uri', call_args[0][0])
-        self.assertDictEqual(self.headers, call_args[1].get('headers'))
+        call_args = self.mockRequests.request.call_args[1]
+        self.assertEqual(json.dumps(self.request_data), call_args.get('data'))
+        self.assertDictEqual(self.headers, call_args.get('headers'))
+        self.assertEqual('PUT', call_args.get('method'))
+        self.assertEqual('uri', call_args.get('url'))
 
         # Validate response
-        self.assertEqual(ret_val, self.mockRequests.delete.return_value)
+        self.assertDictEqual(ret_val, self.response_data)
 
-    def test_unknown_request(self):
+    def test_delete_method_go_right(self):
+
+        # Setup Test case
+        self.mockRequests.request.return_value.status_code = 204
+
+        ret_val = process_request('api_key', 'partner_id', 'uri', 'DELETE')
+
+        # Validate submit_request data
+        self.assertEqual(1, self.mockRequests.request.call_count)
+
+        call_args = self.mockRequests.request.call_args[1]
+        self.assertIsNone(call_args.get('data'))
+        self.assertDictEqual(self.headers, call_args.get('headers'))
+        self.assertEqual('DELETE', call_args.get('method'))
+        self.assertEqual('uri', call_args.get('url'))
+
+        # Validate response
+        self.assertDictEqual(ret_val, {})
+
+    def test_unsupported_method(self):
 
         self.assertRaisesRegexp(
             Exception,
-            'Unsupported method',
-            submit_request,
+            'Unsupported HTTP method: PATCH',
+            process_request,
             'api_key',
             'partner_id',
             'uri',
             'PATCH',
+            json.dumps(self.request_data)
+        )
+
+        # Validate submit_request data
+        self.assertEqual(0, self.mockRequests.request.call_count)
+
+    def test_delete_non_204_response(self):
+
+        # Setup Test case
+        self.mockRequests.request.return_value.status_code = 200
+
+        ret_val = process_request('api_key', 'partner_id', 'uri', 'DELETE')
+
+        # Validate submit_request data
+        self.assertEqual(1, self.mockRequests.request.call_count)
+
+        call_args = self.mockRequests.request.call_args[1]
+        self.assertIsNone(call_args.get('data'))
+        self.assertDictEqual(self.headers, call_args.get('headers'))
+        self.assertEqual('DELETE', call_args.get('method'))
+        self.assertEqual('uri', call_args.get('url'))
+
+        # Validate response
+        self.assertDictEqual(ret_val, self.response_data)
+
+    def test_400_status_code(self):
+
+        # Setup Test case
+        self.mockRequests.request.return_value.status_code = 400
+        self.mockRequests.request.return_value.json.return_value = {'message': 'Bad request for sure'}
+
+        self.assertRaisesRegexp(
+            Exception,
+            'Bad request for sure',
+            process_request,
+            'api_key',
+            'partner_id',
+            'uri',
+            'POST',
             self.request_data
         )
 
         # Validate submit_request data
-        self.assertEqual(0, self.mockRequests.get.call_count)
-        self.assertEqual(0, self.mockRequests.post.call_count)
-        self.assertEqual(0, self.mockRequests.put.call_count)
-        self.assertEqual(0, self.mockRequests.delete.call_count)
+        self.assertEqual(1, self.mockRequests.request.call_count)
+
+        call_args = self.mockRequests.request.call_args[1]
+        self.assertEqual(self.request_data, call_args.get('data'))
+        self.assertDictEqual(self.headers, call_args.get('headers'))
+        self.assertEqual('POST', call_args.get('method'))
+        self.assertEqual('uri', call_args.get('url'))
+
+    def test_rdata_success_false_no_failures(self):
+
+        # Setup Test case
+        self.mockRequests.request.return_value.json.return_value = {
+            'success': False,
+            'message': 'Bad request for sure'
+        }
+
+        self.assertRaisesRegexp(
+            Exception,
+            'Bad request for sure',
+            process_request,
+            'api_key',
+            'partner_id',
+            'uri',
+            'POST',
+            self.request_data
+        )
+
+        # Validate submit_request data
+        self.assertEqual(1, self.mockRequests.request.call_count)
+
+        call_args = self.mockRequests.request.call_args[1]
+        self.assertEqual(self.request_data, call_args.get('data'))
+        self.assertDictEqual(self.headers, call_args.get('headers'))
+        self.assertEqual('POST', call_args.get('method'))
+        self.assertEqual('uri', call_args.get('url'))
+
+    def test_rdata_success_false_with_failures(self):
+
+        # Setup Test case
+        self.mockRequests.request.return_value.json.return_value = {
+            'success': False,
+            'message': 'Bad request for sure',
+            'failures': [
+                {'message': 'error 1'},
+                {'message': 'error 2'}
+            ]
+        }
+
+        self.assertRaisesRegexp(
+            Exception,
+            'Bad request for sure \[FAILURES: error 1, error 2\]',
+            process_request,
+            'api_key',
+            'partner_id',
+            'uri',
+            'POST',
+            self.request_data
+        )
+
+        # Validate submit_request data
+        self.assertEqual(1, self.mockRequests.request.call_count)
+
+        call_args = self.mockRequests.request.call_args[1]
+        self.assertEqual(self.request_data, call_args.get('data'))
+        self.assertDictEqual(self.headers, call_args.get('headers'))
+        self.assertEqual('POST', call_args.get('method'))
+        self.assertEqual('uri', call_args.get('url'))
 
 
 class TestWalletNameInit(TestCase):
@@ -182,10 +288,8 @@ class TestWalletNameGettersSetters(TestCase):
 
 class TestWalletNameSave(TestCase):
     def setUp(self):
-        self.patcher1 = patch('netki.submit_request')
-        self.patcher2 = patch('netki.AttrDict')
-        self.mockSubmitRequest = self.patcher1.start()
-        self.mockAttrDict = self.patcher2.start()
+        self.patcher1 = patch('netki.process_request')
+        self.mockProcessRequest = self.patcher1.start()
 
         self.wallet_name = WalletName(
             id='id',
@@ -208,8 +312,6 @@ class TestWalletNameSave(TestCase):
         self.wallet_name.partner_id = 'partner_id'
 
         # Setup mock response data for validation
-        self.mockSubmitRequest.return_value.status_code = 200
-
         self.mock_wallet_name_response_obj = Mock()
         self.mock_wallet_name_response_obj.id = 'id'
         self.mock_wallet_name_response_obj.domain_name = 'testdomain.com'
@@ -222,7 +324,7 @@ class TestWalletNameSave(TestCase):
         self.response_obj.wallet_names = [
             self.mock_wallet_name_response_obj
         ]
-        self.mockAttrDict.return_value = self.response_obj
+        self.mockProcessRequest.return_value = self.response_obj
 
         # Setup mock wn_api_data to validate submission data
         self.mock_wn_api_data = {
@@ -249,14 +351,15 @@ class TestWalletNameSave(TestCase):
 
         self.wallet_name.save()
 
-        self.assertEqual(1, self.mockSubmitRequest.call_count)
+        self.assertEqual(1, self.mockProcessRequest.call_count)
+        self.assertEqual(self.wallet_name.id, self.mock_wallet_name_response_obj.id)
 
-        call_args = self.mockSubmitRequest.call_args[0]
-        self.assertEqual(call_args[0], self.wallet_name.api_key)
-        self.assertEqual(call_args[1], self.wallet_name.partner_id)
-        self.assertEqual(call_args[2], self.wallet_name.api_url + '/v1/partner/walletname')
-        self.assertEqual(call_args[3], 'PUT')
-        self.assertEqual(call_args[4], json.dumps(self.mock_wn_api_data))
+        call_args = self.mockProcessRequest.call_args[0]
+        self.assertEqual(self.wallet_name.api_key, call_args[0])
+        self.assertEqual(self.wallet_name.partner_id, call_args[1])
+        self.assertEqual(self.wallet_name.api_url + '/v1/partner/walletname', call_args[2])
+        self.assertEqual('PUT', call_args[3])
+        self.assertEqual(json.dumps(self.mock_wn_api_data), call_args[4])
 
     def test_wallet_create_go_right(self):
 
@@ -266,60 +369,21 @@ class TestWalletNameSave(TestCase):
 
         self.wallet_name.save()
 
-        self.assertEqual(1, self.mockSubmitRequest.call_count)
+        self.assertEqual(1, self.mockProcessRequest.call_count)
         self.assertEqual(self.wallet_name.id, self.mock_wallet_name_response_obj.id)
 
-        call_args = self.mockSubmitRequest.call_args[0]
+        call_args = self.mockProcessRequest.call_args[0]
         self.assertEqual(self.wallet_name.api_key, call_args[0])
         self.assertEqual(self.wallet_name.partner_id, call_args[1])
         self.assertEqual(self.wallet_name.api_url + '/v1/partner/walletname', call_args[2])
         self.assertEqual('POST', call_args[3])
         self.assertEqual(json.dumps(self.mock_wn_api_data), call_args[4])
 
-    def test_save_failed_with_failures(self):
-
-        # Setup test case
-        self.mockSubmitRequest.return_value.status_code = 404
-        self.failure_message = Mock()
-        self.failure_message.message = 'this failed'
-        self.response_obj.failures = [self.failure_message]
-
-        self.assertRaisesRegexp(Exception, 'WalletName Save Failed! this failed', self.wallet_name.save)
-
-        self.assertEqual(1, self.mockSubmitRequest.call_count)
-
-        call_args = self.mockSubmitRequest.call_args[0]
-        self.assertEqual(self.wallet_name.api_key, call_args[0])
-        self.assertEqual(self.wallet_name.partner_id, call_args[1])
-        self.assertEqual(self.wallet_name.api_url + '/v1/partner/walletname', call_args[2])
-        self.assertEqual('PUT', call_args[3])
-        self.assertEqual(json.dumps(self.mock_wn_api_data), call_args[4])
-
-    def test_save_failed_with_message(self):
-
-        # Setup test case
-        self.mockSubmitRequest.return_value.status_code = 404
-        self.response_obj.get.return_value = None
-        self.response_obj.message = 'this also failed'
-
-        self.assertRaisesRegexp(Exception, 'WalletName Save Failed! this also failed', self.wallet_name.save)
-
-        self.assertEqual(1, self.mockSubmitRequest.call_count)
-
-        call_args = self.mockSubmitRequest.call_args[0]
-        self.assertEqual(self.wallet_name.api_key, call_args[0])
-        self.assertEqual(self.wallet_name.partner_id, call_args[1])
-        self.assertEqual(self.wallet_name.api_url + '/v1/partner/walletname', call_args[2])
-        self.assertEqual('PUT', call_args[3])
-        self.assertEqual(json.dumps(self.mock_wn_api_data), call_args[4])
-
 
 class TestWalletNameDelete(TestCase):
     def setUp(self):
-        self.patcher1 = patch('netki.submit_request')
-        self.patcher2 = patch('netki.AttrDict')
-        self.mockSubmitRequest = self.patcher1.start()
-        self.mockAttrDict = self.patcher2.start()
+        self.patcher1 = patch('netki.process_request')
+        self.mockProcessRequest = self.patcher1.start()
 
         self.wallet_name = WalletName(
             id='id',
@@ -349,9 +413,9 @@ class TestWalletNameDelete(TestCase):
         }
 
         # Setup mock response data for validation
-        self.mockSubmitRequest.return_value.status_code = 204
+        self.mockProcessRequest.return_value.status_code = 204
         self.response_obj = Mock()
-        self.mockAttrDict.return_value = self.response_obj
+        self.mockProcessRequest.return_value = self.response_obj
 
     def tearDown(self):
         self.patcher1.stop()
@@ -361,50 +425,12 @@ class TestWalletNameDelete(TestCase):
         self.assertIsNone(self.wallet_name.delete())
 
         # Validate delete data
-        self.assertEqual(1, self.mockSubmitRequest.call_count)
-        call_args = self.mockSubmitRequest.call_args[0]
-        self.assertEqual(call_args[0], self.wallet_name.api_key)
-        self.assertEqual(call_args[1], self.wallet_name.partner_id)
-        self.assertEqual(call_args[2], self.wallet_name.api_url + '/v1/partner/walletname')
-        self.assertEqual(call_args[3], 'DELETE')
-        self.assertEqual(call_args[4], json.dumps(self.mock_wn_api_data))
-
-    def test_delete_failed_with_failures(self):
-
-        # Setup test case
-        self.mockSubmitRequest.return_value.status_code = 404
-        self.failure_message = Mock()
-        self.failure_message.message = 'this failed'
-        self.response_obj.failures = [self.failure_message]
-
-        self.assertRaisesRegexp(Exception, 'WalletName Delete Failed! this failed', self.wallet_name.delete)
-
-        # Validate delete data
-        self.assertEqual(1, self.mockSubmitRequest.call_count)
-        call_args = self.mockSubmitRequest.call_args[0]
-        self.assertEqual(call_args[0], self.wallet_name.api_key)
-        self.assertEqual(call_args[1], self.wallet_name.partner_id)
-        self.assertEqual(call_args[2], self.wallet_name.api_url + '/v1/partner/walletname')
-        self.assertEqual(call_args[3], 'DELETE')
-        self.assertEqual(call_args[4], json.dumps(self.mock_wn_api_data))
-
-    def test_delete_failed_with_message(self):
-
-        # Setup test case
-        self.mockSubmitRequest.return_value.status_code = 404
-        self.response_obj.get.return_value = None
-        self.response_obj.message = 'this also failed'
-
-        self.assertRaisesRegexp(Exception, 'WalletName Delete Failed! this also failed', self.wallet_name.delete)
-
-        # Validate delete data
-        self.assertEqual(1, self.mockSubmitRequest.call_count)
-        call_args = self.mockSubmitRequest.call_args[0]
-        self.assertEqual(call_args[0], self.wallet_name.api_key)
-        self.assertEqual(call_args[1], self.wallet_name.partner_id)
-        self.assertEqual(call_args[2], self.wallet_name.api_url + '/v1/partner/walletname')
-        self.assertEqual(call_args[3], 'DELETE')
-        self.assertEqual(call_args[4], json.dumps(self.mock_wn_api_data))
+        call_args = self.mockProcessRequest.call_args[0]
+        self.assertEqual(self.wallet_name.api_key, call_args[0])
+        self.assertEqual(self.wallet_name.partner_id, call_args[1])
+        self.assertEqual(self.wallet_name.api_url + '/v1/partner/walletname', call_args[2])
+        self.assertEqual('DELETE', call_args[3])
+        self.assertEqual(json.dumps(self.mock_wn_api_data), call_args[4])
 
 
 class TestNetkiInit(TestCase):
@@ -423,10 +449,8 @@ class TestNetkiInit(TestCase):
 
 class TestNetkiGetWalletNames(TestCase):
     def setUp(self):
-        self.patcher1 = patch('netki.submit_request')
-        self.patcher2 = patch('netki.AttrDict')
-        self.mockSubmitRequest = self.patcher1.start()
-        self.mockAttrDict = self.patcher2.start()
+        self.patcher1 = patch('netki.process_request')
+        self.mockProcessRequest = self.patcher1.start()
 
         self.netki = Netki(
             partner_id='partner_id',
@@ -435,8 +459,6 @@ class TestNetkiGetWalletNames(TestCase):
         )
 
         # Setup Response object
-        self.mockSubmitRequest.return_value.status_code = 200
-
         self.mock_wallet_name = Mock()
         self.mock_wallet_name.id = 'id'
         self.mock_wallet_name.domain_name = 'testdomain.com'
@@ -454,19 +476,22 @@ class TestNetkiGetWalletNames(TestCase):
         self.mock_response_obj.wallet_names = [self.mock_wallet_name]
         self.mock_response_obj.wallet_name_count = 1
 
-        self.mockAttrDict.return_value = self.mock_response_obj
+        self.mockProcessRequest.return_value = self.mock_response_obj
+
+    def tearDown(self):
+        self.patcher1.stop()
 
     def test_go_right_no_args(self):
 
         ret_val = self.netki.get_wallet_names()
 
         # Validate GET data
-        self.assertEqual(1, self.mockSubmitRequest.call_count)
-        call_args = self.mockSubmitRequest.call_args[0]
-        self.assertEqual(call_args[0], self.netki.api_key)
-        self.assertEqual(call_args[1], self.netki.partner_id)
-        self.assertEqual(call_args[2], self.netki.api_url + '/v1/partner/walletname')
-        self.assertEqual(call_args[3], 'GET')
+        self.assertEqual(1, self.mockProcessRequest.call_count)
+        call_args = self.mockProcessRequest.call_args[0]
+        self.assertEqual(self.netki.api_key, call_args[0])
+        self.assertEqual(self.netki.partner_id, call_args[1])
+        self.assertEqual(self.netki.api_url + '/v1/partner/walletname', call_args[2])
+        self.assertEqual('GET', call_args[3])
 
         # Validate response object
         self.assertEqual(self.mock_wallet_name.id, ret_val[0].id)
@@ -483,12 +508,12 @@ class TestNetkiGetWalletNames(TestCase):
         ret_val = self.netki.get_wallet_names(domain_name='testdomain.com')
 
         # Validate GET data
-        self.assertEqual(1, self.mockSubmitRequest.call_count)
-        call_args = self.mockSubmitRequest.call_args[0]
-        self.assertEqual(call_args[0], self.netki.api_key)
-        self.assertEqual(call_args[1], self.netki.partner_id)
-        self.assertEqual(call_args[2], self.netki.api_url + '/v1/partner/walletname?domain_name=testdomain.com')
-        self.assertEqual(call_args[3], 'GET')
+        self.assertEqual(1, self.mockProcessRequest.call_count)
+        call_args = self.mockProcessRequest.call_args[0]
+        self.assertEqual(self.netki.api_key, call_args[0])
+        self.assertEqual(self.netki.partner_id, call_args[1])
+        self.assertEqual(self.netki.api_url + '/v1/partner/walletname?domain_name=testdomain.com', call_args[2])
+        self.assertEqual('GET', call_args[3])
 
         # Validate response object
         self.assertEqual(self.mock_wallet_name.id, ret_val[0].id)
@@ -505,12 +530,12 @@ class TestNetkiGetWalletNames(TestCase):
         ret_val = self.netki.get_wallet_names(external_id='external_id')
 
         # Validate GET data
-        self.assertEqual(1, self.mockSubmitRequest.call_count)
-        call_args = self.mockSubmitRequest.call_args[0]
-        self.assertEqual(call_args[0], self.netki.api_key)
-        self.assertEqual(call_args[1], self.netki.partner_id)
-        self.assertEqual(call_args[2], self.netki.api_url + '/v1/partner/walletname?external_id=external_id')
-        self.assertEqual(call_args[3], 'GET')
+        self.assertEqual(1, self.mockProcessRequest.call_count)
+        call_args = self.mockProcessRequest.call_args[0]
+        self.assertEqual(self.netki.api_key, call_args[0])
+        self.assertEqual(self.netki.partner_id, call_args[1])
+        self.assertEqual(self.netki.api_url + '/v1/partner/walletname?external_id=external_id', call_args[2])
+        self.assertEqual('GET', call_args[3])
 
         # Validate response object
         self.assertEqual(self.mock_wallet_name.id, ret_val[0].id)
@@ -527,15 +552,15 @@ class TestNetkiGetWalletNames(TestCase):
         ret_val = self.netki.get_wallet_names(domain_name='testdomain.com', external_id='external_id')
 
         # Validate GET data
-        self.assertEqual(1, self.mockSubmitRequest.call_count)
-        call_args = self.mockSubmitRequest.call_args[0]
-        self.assertEqual(call_args[0], self.netki.api_key)
-        self.assertEqual(call_args[1], self.netki.partner_id)
+        self.assertEqual(1, self.mockProcessRequest.call_count)
+        call_args = self.mockProcessRequest.call_args[0]
+        self.assertEqual(self.netki.api_key, call_args[0])
+        self.assertEqual(self.netki.partner_id, call_args[1])
         self.assertEqual(
-            call_args[2],
-            self.netki.api_url + '/v1/partner/walletname?domain_name=testdomain.com&external_id=external_id'
+            self.netki.api_url + '/v1/partner/walletname?domain_name=testdomain.com&external_id=external_id',
+            call_args[2]
         )
-        self.assertEqual(call_args[3], 'GET')
+        self.assertEqual('GET', call_args[3])
 
         # Validate response object
         self.assertEqual(self.mock_wallet_name.id, ret_val[0].id)
@@ -547,36 +572,20 @@ class TestNetkiGetWalletNames(TestCase):
         self.assertEqual('api_key', ret_val[0].api_key)
         self.assertEqual('partner_id', ret_val[0].partner_id)
 
-    def test_non_200_response(self):
-
-        # Setup test case
-        self.mockSubmitRequest.return_value.status_code = 404
-        self.mock_response_obj.message = 'Domain not found'
-
-        self.assertRaisesRegexp(Exception, 'Get WalletNames Failed! Domain not found', self.netki.get_wallet_names)
-
-        # Validate GET data
-        self.assertEqual(1, self.mockSubmitRequest.call_count)
-        call_args = self.mockSubmitRequest.call_args[0]
-        self.assertEqual(call_args[0], self.netki.api_key)
-        self.assertEqual(call_args[1], self.netki.partner_id)
-        self.assertEqual(call_args[2], self.netki.api_url + '/v1/partner/walletname')
-        self.assertEqual(call_args[3], 'GET')
-
     def test_no_wallet_names_returned(self):
 
         # Setup test case
         self.mock_response_obj.wallet_name_count = 0
 
-        self.assertEqual([], self.netki.get_wallet_names(domain_name='testdomain.com'))
+        self.assertListEqual([], self.netki.get_wallet_names(domain_name='testdomain.com'))
 
         # Validate GET data
-        self.assertEqual(1, self.mockSubmitRequest.call_count)
-        call_args = self.mockSubmitRequest.call_args[0]
-        self.assertEqual(call_args[0], self.netki.api_key)
-        self.assertEqual(call_args[1], self.netki.partner_id)
-        self.assertEqual(call_args[2], self.netki.api_url + '/v1/partner/walletname?domain_name=testdomain.com')
-        self.assertEqual(call_args[3], 'GET')
+        self.assertEqual(1, self.mockProcessRequest.call_count)
+        call_args = self.mockProcessRequest.call_args[0]
+        self.assertEqual(self.netki.api_key, call_args[0])
+        self.assertEqual(self.netki.partner_id, call_args[1])
+        self.assertEqual(self.netki.api_url + '/v1/partner/walletname?domain_name=testdomain.com', call_args[2])
+        self.assertEqual('GET', call_args[3])
 
 
 class TestNetkiCreateWalletName(TestCase):
@@ -599,3 +608,310 @@ class TestNetkiCreateWalletName(TestCase):
         self.assertEqual('api_key', ret_val.api_key)
         self.assertEqual('partner_id', ret_val.partner_id)
 
+    def test_go_right_unicode(self):
+
+        ret_val = self.netki.create_wallet_name(u'ἩἸ', 'name', {'key': 'val'}, 'external_id')
+
+        self.assertEqual(u'\u1f29\u1f38', ret_val.domain_name)
+        self.assertEqual('name', ret_val.name)
+        self.assertEqual({'key': 'val'}, ret_val.wallets)
+        self.assertEqual('external_id', ret_val.external_id)
+        self.assertEqual('api_url', ret_val.api_url)
+        self.assertEqual('api_key', ret_val.api_key)
+        self.assertEqual('partner_id', ret_val.partner_id)
+
+    def test_go_right_unicode_2(self):
+
+        ret_val = self.netki.create_wallet_name(u'\u1f29\u1f38', 'name', {'key': 'val'}, 'external_id')
+
+        self.assertEqual(u'\u1f29\u1f38', ret_val.domain_name)
+        self.assertEqual('name', ret_val.name)
+        self.assertEqual({'key': 'val'}, ret_val.wallets)
+        self.assertEqual('external_id', ret_val.external_id)
+        self.assertEqual('api_url', ret_val.api_url)
+        self.assertEqual('api_key', ret_val.api_key)
+        self.assertEqual('partner_id', ret_val.partner_id)
+
+
+class TestCreatePartner(TestCase):
+    def setUp(self):
+        self.patcher1 = patch('netki.process_request')
+        self.mockProcessRequest = self.patcher1.start()
+
+        self.netki = Netki(
+            partner_id='partner_id',
+            api_key='api_key',
+            api_url='api_url'
+        )
+
+        self.response_data = {'name': 'partner_name', 'id': 'partner_id'}
+
+        self.mockProcessRequest.return_value.partner = self.response_data
+
+    def tearDown(self):
+        self.patcher1.stop()
+
+    def test_go_right(self):
+
+        ret_val = self.netki.create_partner('partner_name')
+
+        # Validate request data
+        self.assertEqual(1, self.mockProcessRequest.call_count)
+        call_args = self.mockProcessRequest.call_args[0]
+        self.assertEqual(self.netki.api_key, call_args[0])
+        self.assertEqual(self.netki.partner_id, call_args[1])
+        self.assertEqual(self.netki.api_url + '/v1/admin/partner/partner_name', call_args[2])
+        self.assertEqual('POST', call_args[3])
+
+        # Validate return data
+        self.assertEqual(self.response_data, ret_val)
+
+
+class TestGetPartners(TestCase):
+    def setUp(self):
+        self.patcher1 = patch('netki.process_request')
+        self.mockProcessRequest = self.patcher1.start()
+
+        self.netki = Netki(
+            partner_id='partner_id',
+            api_key='api_key',
+            api_url='api_url'
+        )
+
+        self.response_data = {'partners': [
+            {'name': 'partner1', 'id': 'id1'},
+            {'name': 'partner2', 'id': 'id2'}
+        ]}
+
+        self.mockProcessRequest.return_value = self.response_data
+
+    def tearDown(self):
+        self.patcher1.stop()
+
+    def test_go_right(self):
+
+        ret_val = self.netki.get_partners()
+
+        # Validate request data
+        self.assertEqual(1, self.mockProcessRequest.call_count)
+        call_args = self.mockProcessRequest.call_args[0]
+        self.assertEqual(self.netki.api_key, call_args[0])
+        self.assertEqual(self.netki.partner_id, call_args[1])
+        self.assertEqual(self.netki.api_url + '/v1/admin/partner', call_args[2])
+        self.assertEqual('GET', call_args[3])
+
+        # Validate return data
+        self.assertEqual(self.response_data, ret_val)
+
+
+class TestDeletePartner(TestCase):
+    def setUp(self):
+        self.patcher1 = patch('netki.process_request')
+        self.mockProcessRequest = self.patcher1.start()
+
+        self.netki = Netki(
+            partner_id='partner_id',
+            api_key='api_key',
+            api_url='api_url'
+        )
+
+    def tearDown(self):
+        self.patcher1.stop()
+
+    def test_go_right(self):
+
+        ret_val = self.netki.delete_partner('partner_name')
+
+        # Validate request data
+        self.assertEqual(1, self.mockProcessRequest.call_count)
+        call_args = self.mockProcessRequest.call_args[0]
+        self.assertEqual(self.netki.api_key, call_args[0])
+        self.assertEqual(self.netki.partner_id, call_args[1])
+        self.assertEqual(self.netki.api_url + '/v1/admin/partner/partner_name', call_args[2])
+        self.assertEqual('DELETE', call_args[3])
+
+        # Validate return data
+        self.assertIsNone(ret_val)
+
+
+class TestCreatePartnerDomain(TestCase):
+    def setUp(self):
+        self.patcher1 = patch('netki.process_request')
+        self.mockProcessRequest = self.patcher1.start()
+
+        self.netki = Netki(
+            partner_id='partner_id',
+            api_key='api_key',
+            api_url='api_url'
+        )
+
+        self.response_data = {'domain_name': 'domain_name'}
+
+        self.mockProcessRequest.return_value = self.response_data
+
+    def test_go_right_partner_domain(self):
+
+        ret_val = self.netki.create_partner_domain('domain_name')
+
+        # Validate request data
+        self.assertEqual(1, self.mockProcessRequest.call_count)
+        call_args = self.mockProcessRequest.call_args[0]
+        self.assertEqual(self.netki.api_key, call_args[0])
+        self.assertEqual(self.netki.partner_id, call_args[1])
+        self.assertEqual(self.netki.api_url + '/v1/partner/domain/domain_name', call_args[2])
+        self.assertEqual('POST', call_args[3])
+
+        # Validate return data
+        self.assertEqual(self.response_data, ret_val)
+
+    def test_go_right_sub_partner_domain(self):
+
+        ret_val = self.netki.create_partner_domain('domain_name', 'partner_id')
+
+        # Validate request data
+        self.assertEqual(1, self.mockProcessRequest.call_count)
+        call_args = self.mockProcessRequest.call_args[0]
+        self.assertEqual(self.netki.api_key, call_args[0])
+        self.assertEqual(self.netki.partner_id, call_args[1])
+        self.assertEqual(self.netki.api_url + '/v1/partner/domain/domain_name', call_args[2])
+        self.assertEqual('POST', call_args[3])
+        self.assertEqual(json.dumps({'partner_id': 'partner_id'}), call_args[4])
+
+        # Validate return data
+        self.assertEqual(self.response_data, ret_val)
+
+
+class TestGetDomains(TestCase):
+    def setUp(self):
+        self.patcher1 = patch('netki.process_request')
+        self.mockProcessRequest = self.patcher1.start()
+
+        self.netki = Netki(
+            partner_id='partner_id',
+            api_key='api_key',
+            api_url='api_url'
+        )
+
+        self.response_data = {'domains': [
+            {'domain_name': 'testdomain1.com'},
+            {'domain_name': 'testdomain2.com'},
+        ]}
+
+        self.mockProcessRequest.return_value = self.response_data
+
+    def tearDown(self):
+        self.patcher1.stop()
+
+    def test_go_right(self):
+
+        ret_val = self.netki.get_domains()
+
+        # Validate request data
+        self.assertEqual(1, self.mockProcessRequest.call_count)
+        call_args = self.mockProcessRequest.call_args[0]
+        self.assertEqual(self.netki.api_key, call_args[0])
+        self.assertEqual(self.netki.partner_id, call_args[1])
+        self.assertEqual(self.netki.api_url + '/api/domain', call_args[2])
+        self.assertEqual('GET', call_args[3])
+
+        # Validate return data
+        self.assertEqual(self.response_data, ret_val)
+
+
+class TestGetDomainStatus(TestCase):
+    def setUp(self):
+        self.patcher1 = patch('netki.process_request')
+        self.mockProcessRequest = self.patcher1.start()
+
+        self.netki = Netki(
+            partner_id='partner_id',
+            api_key='api_key',
+            api_url='api_url'
+        )
+
+        self.response_data = {'domains': [
+            {'domain_name': 'testdomain1.com', 'status': 'complete'},
+        ]}
+
+        self.mockProcessRequest.return_value = self.response_data
+
+    def tearDown(self):
+        self.patcher1.stop()
+
+    def test_go_right(self):
+
+        ret_val = self.netki.get_domain_status('domain_name')
+
+        # Validate request data
+        self.assertEqual(1, self.mockProcessRequest.call_count)
+        call_args = self.mockProcessRequest.call_args[0]
+        self.assertEqual(self.netki.api_key, call_args[0])
+        self.assertEqual(self.netki.partner_id, call_args[1])
+        self.assertEqual(self.netki.api_url + '/v1/partner/domain/domain_name', call_args[2])
+        self.assertEqual('GET', call_args[3])
+
+        # Validate return data
+        self.assertEqual(self.response_data, ret_val)
+
+
+class TestGetDomainDNSSECDetails(TestCase):
+    def setUp(self):
+        self.patcher1 = patch('netki.process_request')
+        self.mockProcessRequest = self.patcher1.start()
+
+        self.netki = Netki(
+            partner_id='partner_id',
+            api_key='api_key',
+            api_url='api_url'
+        )
+
+        self.response_data = {'domains': [
+            {'public_key_signing_key': 'PKSK'},
+        ]}
+
+        self.mockProcessRequest.return_value = self.response_data
+
+    def tearDown(self):
+        self.patcher1.stop()
+
+    def test_go_right(self):
+
+        ret_val = self.netki.get_domain_dnssec_details('domain_name')
+
+        # Validate request data
+        self.assertEqual(1, self.mockProcessRequest.call_count)
+        call_args = self.mockProcessRequest.call_args[0]
+        self.assertEqual(self.netki.api_key, call_args[0])
+        self.assertEqual(self.netki.partner_id, call_args[1])
+        self.assertEqual(self.netki.api_url + '/v1/partner/domain/dnssec/domain_name', call_args[2])
+        self.assertEqual('GET', call_args[3])
+
+        # Validate return data
+        self.assertEqual(self.response_data, ret_val)
+
+
+class TestDeletePartnerDomain(TestCase):
+    def setUp(self):
+        self.patcher1 = patch('netki.process_request')
+        self.mockProcessRequest = self.patcher1.start()
+
+        self.netki = Netki(
+            partner_id='partner_id',
+            api_key='api_key',
+            api_url='api_url'
+        )
+
+    def test_go_right(self):
+
+        ret_val = self.netki.delete_partner_domain('domain_name')
+
+        # Validate request data
+        self.assertEqual(1, self.mockProcessRequest.call_count)
+        call_args = self.mockProcessRequest.call_args[0]
+        self.assertEqual(self.netki.api_key, call_args[0])
+        self.assertEqual(self.netki.partner_id, call_args[1])
+        self.assertEqual(self.netki.api_url + '/v1/partner/domain/domain_name', call_args[2])
+        self.assertEqual('DELETE', call_args[3])
+
+        # Validate return data
+        self.assertIsNone(ret_val)

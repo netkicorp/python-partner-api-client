@@ -1,4 +1,4 @@
-from distutils.core import setup
+from setuptools import setup
 
 setup(
     name='netki-partner-client',
@@ -9,6 +9,7 @@ setup(
     author_email='opensource@netki.com',
     url='https://github.com/netkicorp/python-partner-api-client',
     download_url='',
-    keywords=['netki', 'partner', 'certificate', 'walletname', 'wallet', 'name', 'bitcoin', 'blockchain'],
+    keywords=['netki', 'partner', 'certificate', 'walletname', 'wallet', 'name', 'bitcoin', 'blockchain', 'identity'],
     classifiers=[],
+    license='BSD',
 )

@@ -13,7 +13,7 @@ Add this line to your application import:
 
 ## Usage
 
-See python-partner-client.html in the /docs folder for more information
+See example.py in the /example folder for more information
 
 ## Contributing
 

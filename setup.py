@@ -16,7 +16,7 @@ tests_requires = [
 setup(
     name='netki_partner_client',
     packages=['netki'],
-    version='1.0.0',
+    version='1.0.1',
     description='This Python module provides a client for Netki\'s (https://netki.com) Partner API.',
     author='Netki Opensource',
     author_email='opensource@netki.com',

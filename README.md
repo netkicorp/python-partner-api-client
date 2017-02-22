@@ -6,9 +6,15 @@ This Python module provides a client for [Netki's](https://netki.com) Partner AP
 
 Download and add the netki directory to your project.
 
-Add this line to your application import:
+Install the package using pip:
 
-```import netki
+```bash
+pip install netki_partner_client
+```
+
+Include Netki in your project:
+```python
+import netki
 ```
 
 ## Usage

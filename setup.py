@@ -9,13 +9,13 @@ install_requires = [
     'wsgiref==0.1.2'
 ]
 
-test_requires = [
+tests_requires = [
     'mock==1.0.1'
 ]
 
 setup(
-    name='netki-partner-client',
-    packages=['netki-partner-client'],
+    name='netki_partner_client',
+    packages=['netki'],
     version='1.0.0',
     description='This Python module provides a client for Netki\'s (https://netki.com) Partner API.',
     author='Netki Opensource',
@@ -24,5 +24,5 @@ setup(
     keywords=['netki', 'partner', 'certificate', 'walletname', 'wallet', 'name', 'bitcoin', 'blockchain', 'identity'],
     license='BSD',
     install_requires=install_requires,
-    test_requires=test_requires
+    tests_requires=tests_requires
 )
